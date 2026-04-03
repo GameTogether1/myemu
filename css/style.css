@@ -1,0 +1,233 @@
+/* ========================================
+   复古游戏模拟器 - 样式表
+   ======================================== */
+
+/* 基础工具类 */
+.text-shadow {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.text-shadow-lg {
+  text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.8);
+}
+
+.retro-border {
+  box-shadow: 0 0 0 4px #fff, 0 0 0 8px #000;
+}
+
+.platform-hover {
+  transition: transform 0.3s ease;
+}
+
+.platform-hover:hover {
+  transform: translateY(-5px) scale(1.05);
+}
+
+.game-card {
+  transition: all 0.3s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 自定义动画 */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 平台颜色类（背景色） */
+.bg-nes { background-color: #E63946; }
+.bg-snes { background-color: #9D4EDD; }
+.bg-gba { background-color: #43AA8B; }
+.bg-md { background-color: #48CAE4; }
+.bg-arcade { background-color: #FB8500; }
+.bg-ps1 { background-color: #6C757D; }
+
+/* 平台颜色类（文字色） */
+.text-nes { color: #E63946; }
+.text-snes { color: #9D4EDD; }
+.text-gba { color: #43AA8B; }
+.text-md { color: #48CAE4; }
+.text-arcade { color: #FB8500; }
+.text-ps1 { color: #6C757D; }
+
+/* 悬停文字颜色 */
+.hover\:text-nes:hover { color: #E63946; }
+.hover\:text-snes:hover { color: #9D4EDD; }
+.hover\:text-gba:hover { color: #43AA8B; }
+.hover\:text-md:hover { color: #48CAE4; }
+.hover\:text-arcade:hover { color: #FB8500; }
+.hover\:text-ps1:hover { color: #6C757D; }
+
+/* 悬停边框颜色 */
+.hover\:border-nes:hover { border-color: #E63946; }
+.hover\:border-snes:hover { border-color: #9D4EDD; }
+.hover\:border-gba:hover { border-color: #43AA8B; }
+.hover\:border-md:hover { border-color: #48CAE4; }
+.hover\:border-arcade:hover { border-color: #FB8500; }
+.hover\:border-ps1:hover { border-color: #6C757D; }
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* 等待按键状态 */
+.waiting {
+  animation: pulse 1s infinite;
+  color: #9D4EDD;
+}
+
+/* Toast 动画 */
+#toast {
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+#toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* 加载动画 */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* 游戏卡片图片容器 */
+.game-card img {
+  transition: transform 0.3s ease;
+}
+
+.game-card:hover img {
+  transform: scale(1.05);
+}
+
+/* 平台卡片样式 */
+.platform-card {
+  transition: all 0.3s ease;
+}
+
+.platform-card:hover {
+  transform: translateY(-5px);
+}
+
+/* 搜索框焦点样式 */
+#search-input:focus,
+#mobile-search-input:focus {
+  box-shadow: 0 0 0 3px rgba(123, 44, 191, 0.3);
+}
+
+/* 按钮焦点样式 */
+button:focus-visible {
+  outline: 2px solid #7B2CBF;
+  outline-offset: 2px;
+}
+
+/* 链接下划线动画 */
+a {
+  position: relative;
+}
+
+a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: #7B2CBF;
+  transition: width 0.3s;
+}
+
+a:hover::after {
+  width: 100%;
+}
+
+/* 排除特定链接的动画 */
+nav a::after,
+footer a::after,
+.game-card a::after,
+.platform-card a::after,
+button::after {
+  display: none;
+}
+
+/* 自定义复选框样式 */
+input[type="checkbox"] {
+  accent-color: #7B2CBF;
+}
+
+/* 下拉选择框样式 */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* 响应式字体大小 */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1536px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .font-pixel {
+    font-size: 0.8rem;
+  }
+}
