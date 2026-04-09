@@ -341,7 +341,7 @@ function openVIPModal() {
                         <div class="space-y-4 text-gray-300"><p>为更好的运营网站，</p><p>需要您的一份支持。</p><br><p>白嫖是您的权力，</p><p class="text-yellow-400 font-bold">打赏更显您的格局。</p><br><div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4"><p class="text-yellow-300 font-bold mb-1">打赏一次，终身免费！</p><p class="text-white font-bold">全站资源，无限下载！</p></div></div>
                         <button id="paid-btn" class="mt-8 w-full py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold transition-all shadow-lg hover:shadow-green-500/30"><i class="fa fa-check-circle mr-2"></i>我已完成支付</button>
                     </div>
-                    <div class="md:w-1/2 bg-dark/50 p-8 flex items-center justify-center"><div class="relative"><div class="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl blur-xl"></div><img src="https://free.picui.cn/free/2026/03/09/69ae4457b98d4.png" alt="支付二维码" class="relative rounded-xl shadow-2xl max-w-full h-auto border border-gray-700"><p class="text-center text-gray-400 text-sm mt-4">微信扫码支付</p></div></div>
+                    <div class="md:w-1/2 bg-dark/50 p-8 flex items-center justify-center"><div class="relative"><div class="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl blur-xl"></div><img src="https://pub-1f2ba50106ed4026bd217cd777924d22.r2.dev/QR.png" alt="支付二维码" class="relative rounded-xl shadow-2xl max-w-full h-auto border border-gray-700"><p class="text-center text-gray-400 text-sm mt-4">微信扫码支付</p></div></div>
                 </div>
             </div>
         </div>
