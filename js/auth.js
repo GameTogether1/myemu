@@ -1,6 +1,7 @@
 // ============================================
 // auth.js - 最终完整版（含每日游戏限制 - 页面加载时查询）
 // 修复：忘记密码弹窗无法显示的问题
+// 修复注册逻辑：移除邮箱预检查，移除手动插入GameTogether，完全依赖Supabase和触发器
 // ============================================
 
 const SUPABASE_URL = 'https://szeedpcuharbupkjrnob.supabase.co';
@@ -699,53 +700,57 @@ async function handleLogin(e) {
     }
 }
 
-async function checkEmailExists(email) {
-    try {
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password: 'wrong_password_for_check' });
-        if (error) {
-            if (error.message.includes('Invalid login credentials')) return { exists: true, confirmed: true };
-            if (error.message.includes('Email not confirmed')) return { exists: true, confirmed: false };
-            return { exists: false, confirmed: false };
-        }
-        return { exists: false, confirmed: false };
-    } catch (error) { return { exists: false, confirmed: false }; }
-}
-
+// ============================================
+// 注册逻辑（修复版）
+// 移除预检查，移除手动插入，完全依赖 Supabase 和数据库触发器
+// ============================================
 async function handleRegister(e) {
     e.preventDefault();
     const email = elements.registerEmail.value;
     const password = elements.registerPassword.value;
     const confirmPassword = elements.registerConfirmPassword.value;
-    if (password !== confirmPassword) { showToast('两次输入的密码不一致', 'error'); shakeForm(elements.registerFormElement); return; }
-    if (password.length < 6) { showToast('密码长度至少为6位', 'error'); shakeForm(elements.registerFormElement); return; }
+
+    if (password !== confirmPassword) {
+        showToast('两次输入的密码不一致', 'error');
+        shakeForm(elements.registerFormElement);
+        return;
+    }
+    if (password.length < 6) {
+        showToast('密码长度至少为6位', 'error');
+        shakeForm(elements.registerFormElement);
+        return;
+    }
+
     setButtonLoading(elements.registerSubmit, elements.registerLoading, true, '立即注册');
+
     try {
-        const { exists, confirmed } = await checkEmailExists(email);
-        if (exists) {
-            if (confirmed) showToast('该邮箱已注册，请直接登录', 'error');
-            else showToast('该邮箱已注册但未验证，请前往邮箱确认邮件', 'warning');
-            setButtonLoading(elements.registerSubmit, elements.registerLoading, false, '立即注册');
+        // 直接调用 Supabase 注册，让后端自行判断邮箱是否已存在
+        const { error } = await supabaseClient.auth.signUp({ email, password });
+
+        if (error) {
+            let message = '注册失败，请重试';
+            if (error.message.includes('already registered')) {
+                message = '该邮箱已注册，请直接登录';
+                // 自动切换到登录界面
+                setTimeout(() => switchToLogin(), 1500);
+            } else if (error.message.includes('rate limit')) {
+                message = '操作过于频繁，请稍后再试';
+            } else if (error.message.includes('valid email')) {
+                message = '请输入有效的邮箱地址';
+            }
+            showToast(message, 'error');
+            shakeForm(elements.registerFormElement);
             return;
         }
-        const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) throw error;
-        if (data.user) {
-            try {
-                await supabaseClient.from('GameTogether').insert([{
-                    id: data.user.id, email: email, is_member: false, created_at: getCurrentTimestamp(),
-                    daily_download_count: 0, daily_download_date: null, daily_download_game_id: null, order_id: null
-                }]);
-            } catch (profileError) { console.error('创建记录异常:', profileError); }
-        }
+
+        // 注册成功，由数据库触发器自动创建 GameTogether 记录
         showToast('注册成功！请前往邮箱查看验证邮件', 'success');
         elements.registerFormElement.reset();
         setTimeout(() => switchToLogin(), 2000);
+
     } catch (error) {
-        console.error('注册失败:', error);
-        let message = '注册失败，请重试';
-        if (error.message.includes('User already registered')) message = '该邮箱已被注册';
-        else if (error.message.includes('valid email')) message = '请输入有效的邮箱地址';
-        showToast(message, 'error');
+        console.error('注册异常:', error);
+        showToast('注册失败，请稍后重试', 'error');
         shakeForm(elements.registerFormElement);
     } finally {
         setButtonLoading(elements.registerSubmit, elements.registerLoading, false, '立即注册');
