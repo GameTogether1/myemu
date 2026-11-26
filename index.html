@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>一块游戏 · 复古模拟</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#111827',
+            secondary: '#7B2CBF',
+            background: '#0f172a',
+            text: '#FFFFFF',
+            textSecondary: '#cbd5e1',
+            nes: '#E63946',
+            snes: '#9D4EDD',
+            gba: '#43AA8B',
+            md: '#48CAE4',
+            arcade: '#FB8500',
+            ps1: '#6C757D',
+            '32x': '#FF006E',
+            'neon-blue': '#00f3ff',
+            'neon-purple': '#bf00ff',
+            'neon-pink': '#ff00a0',
+            'dark': '#0f172a',
+            'dark-light': '#1e293b'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            pixel: ['"Press Start 2P"', 'system-ui', 'sans-serif']
+          },
+          animation: {
+            'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+            'slide-up': 'slideUp 0.3s ease-out',
+            'pulse-glow': 'pulseGlow 2s infinite'
+          },
+          keyframes: {
+            shake: {
+              '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+              '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+              '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+              '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(16px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' }
+            },
+            pulseGlow: {
+              '0%, 100%': { boxShadow: '0 0 6px #00f3ff' },
+              '50%': { boxShadow: '0 0 20px #00f3ff, 0 0 30px #bf00ff' }
+            }
+          },
+          boxShadow: {
+            'neon-blue': '0 0 10px rgba(0, 243, 255, 0.5)',
+            'neon-purple': '0 0 10px rgba(191, 0, 255, 0.5)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome & 像素字体 -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+
+  <!-- 统一样式文件 -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-background text-text min-h-screen flex flex-col antialiased">
+  <!-- 背景霓虹光晕 -->
+  <div class="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-600 rounded-full filter blur-[140px] opacity-15"></div>
+    <div class="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-600 rounded-full filter blur-[140px] opacity-15"></div>
+    <div class="absolute bottom-0 left-1/3 w-96 h-96 bg-pink-600 rounded-full filter blur-[140px] opacity-10"></div>
+  </div>
+
+  <!-- 顶部导航栏 -->
+  <header class="bg-primary/85 backdrop-blur-md border-b border-white/10 sticky top-0 z-40">
+    <div class="container mx-auto px-4 py-3">
+      <div class="flex justify-between items-center gap-4">
+        <!-- Logo -->
+        <a href="#platforms" onclick="event.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'});" class="flex items-center space-x-2.5 shrink-0">
+          <div class="w-9 h-9 bg-gradient-to-br from-secondary to-neon-blue rounded-xl flex items-center justify-center shadow-lg">
+            <i class="fa fa-gamepad text-xl text-white"></i>
+          </div>
+          <span class="text-base md:text-lg font-bold font-pixel text-white">一块游戏模拟器</span>
+        </a>
+
+        <!-- 桌面搜索框 -->
+        <div class="hidden md:flex items-center flex-1 max-w-md mx-4">
+          <div class="relative w-full">
+            <input type="search" id="search-input" placeholder="搜索经典游戏名称..."
+              class="w-full py-2 pl-4 pr-16 rounded-full bg-dark-light/90 border border-white/10 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-neon-blue transition">
+            <button id="clear-search" class="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white hidden" title="清空搜索">
+              <i class="fa fa-times-circle"></i>
+            </button>
+            <button id="search-button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-neon-blue">
+              <i class="fa fa-search"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 导航操作 + 登录 -->
+        <nav class="hidden md:flex items-center space-x-5 shrink-0">
+          <button type="button" onclick="document.getElementById('games').scrollIntoView({behavior: 'smooth'});" class="text-sm text-textSecondary hover:text-white transition-colors">游戏库</button>
+          <button type="button" id="open-help-btn" class="text-sm text-textSecondary hover:text-neon-blue transition-colors flex items-center gap-1.5">
+            <i class="fa fa-question-circle"></i><span>游玩帮助</span>
+          </button>
+          <div id="auth-section">
+            <button id="login-btn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-medium py-2 px-5 rounded-full transition-all hover:shadow-neon-blue flex items-center btn-shine">
+              <i class="fa fa-user-circle mr-2"></i> 登录
+            </button>
+          </div>
+        </nav>
+
+        <!-- 移动端菜单按钮 -->
+        <button id="mobile-menu-button" class="md:hidden text-text text-xl p-1">
+          <i class="fa fa-bars"></i>
+        </button>
+      </div>
+
+      <!-- 移动端搜索框 -->
+      <div class="md:hidden mt-3">
+        <div class="relative">
+          <input type="search" id="mobile-search-input" placeholder="搜索游戏..."
+            class="w-full py-2 pl-4 pr-16 rounded-full bg-dark-light border border-white/10 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-neon-blue">
+          <button id="mobile-clear-search" class="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white hidden" title="清空搜索">
+            <i class="fa fa-times-circle"></i>
+          </button>
+          <button id="mobile-search-button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+            <i class="fa fa-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 移动端菜单 -->
+      <div id="mobile-menu" class="md:hidden hidden mt-3 pt-3 border-t border-white/10">
+        <div class="flex flex-col space-y-2.5">
+          <button type="button" onclick="document.getElementById('games').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left text-sm text-textSecondary hover:text-white py-1">游戏库</button>
+          <button type="button" id="mobile-open-help-btn" class="text-left text-sm text-textSecondary hover:text-neon-blue py-1">游玩帮助与缓存清理</button>
+          <div id="mobile-auth-section" class="pt-1">
+            <button id="mobile-login-btn" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full w-full">
+              <i class="fa fa-user-circle mr-2"></i> 登录
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主体内容（紧凑清晰：欢迎横幅 -> 平台选择 -> 统一游戏库） -->
+  <main class="flex-grow container mx-auto px-4 py-8 space-y-10">
+    <!-- 紧凑版 Hero 横幅 -->
+    <section class="glass-effect rounded-2xl px-6 py-8 md:py-10 text-center relative overflow-hidden">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-secondary/20 border border-secondary/40 text-purple-200 text-xs font-medium mb-4">
+        <i class="fa fa-bolt text-neon-blue"></i>
+        <span id="hero-stats-text">6 大经典平台 · 浏览器即点即玩 · 无需下载</span>
+      </div>
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-wide leading-normal mb-3 text-white">
+        重温经典 <span class="inline-block py-1 bg-gradient-to-r from-neon-blue to-neon-purple bg-clip-text text-transparent">游戏时光</span>
+      </h1>
+      <p class="text-sm md:text-base text-textSecondary max-w-2xl mx-auto">
+        在线畅玩红白机 NES、超级任天堂 SNES、GBA、世嘉 MD、经典街机与 PS1，支持自定义按键与全屏体验。
+      </p>
+    </section>
+
+    <!-- 平台选择条 -->
+    <section id="platforms">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa fa-cubes text-neon-blue"></i><span>选择平台</span>
+        </h2>
+        <span class="text-xs text-gray-400">点击平台即可快速筛选</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3" id="platforms-container">
+        <!-- JS 动态生成 -->
+      </div>
+    </section>
+
+    <!-- 统一游戏库 -->
+    <section id="games" class="scroll-mt-24">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div class="flex items-center gap-2.5">
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fa fa-fire text-arcade"></i><span>游戏库</span>
+          </h2>
+          <span id="games-count-label" class="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-gray-300"></span>
+        </div>
+      </div>
+
+      <!-- 游戏类型筛选器 -->
+      <div id="genres-container" class="flex flex-wrap gap-2 mb-6">
+        <!-- JS 动态生成 -->
+      </div>
+
+      <!-- 游戏卡片网格 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="games-container">
+        <!-- JS 动态生成 -->
+      </div>
+
+      <div class="text-center mt-10">
+        <button id="load-more-games" class="bg-gradient-to-r from-secondary to-blue-600 hover:opacity-90 text-white text-sm font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105 shadow-lg">
+          加载更多游戏
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- 简洁页脚 -->
+  <footer class="bg-primary/80 border-t border-white/10 text-gray-400 py-8 mt-12">
+    <div class="container mx-auto px-4 text-center space-y-4">
+      <div class="flex flex-wrap justify-center items-center gap-6 text-sm text-gray-300">
+        <span class="font-bold text-white"><i class="fa fa-gamepad text-secondary mr-1.5"></i>一块游戏模拟器</span>
+        <span><i class="fa fa-envelope text-neon-blue mr-1.5"></i>841441551@qq.com</span>
+        <span><i class="fa fa-weixin text-green-400 mr-1.5"></i>GameTogether1</span>
+      </div>
+      <p class="max-w-3xl mx-auto text-xs text-gray-500 leading-relaxed">
+        免责声明：本站内容均由第三方用户自行上传分享推荐，仅供参考学习使用，版权归原著所有，禁止用于商业和非法行为，请于24小时内自行删除。本站为非商业性网站，如有侵权请联系我们，我们将第一时间删除相关内容。
+      </p>
+    </div>
+  </footer>
+
+  <!-- 游玩帮助与安全缓存清理弹窗 -->
+  <div id="help-modal" class="fixed inset-0 z-50 hidden">
+    <div id="help-backdrop" class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+    <div class="relative h-full flex items-center justify-center p-4 pointer-events-none">
+      <div class="glass-effect rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 pointer-events-auto relative shadow-2xl border border-white/15">
+        <button id="close-help-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">
+          <i class="fa fa-times"></i>
+        </button>
+        <h2 class="text-xl font-bold text-white mb-5 flex items-center gap-2">
+          <i class="fa fa-gamepad text-neon-blue"></i><span>游玩帮助与键位说明</span>
+        </h2>
+
+        <div class="space-y-4 text-sm text-gray-300">
+          <!-- 改键与存档真实指引 -->
+          <div class="bg-gray-900/90 rounded-xl p-4 border border-white/10 space-y-2">
+            <h3 class="font-bold text-white flex items-center gap-2">
+              <i class="fa fa-keyboard-o text-secondary"></i>如何自定义按键与即时存档？
+            </h3>
+            <p class="text-xs text-gray-300 leading-relaxed">
+              进入游戏后，将鼠标移至<strong>游戏画面底部工具栏</strong>：
+            </p>
+            <ul class="text-xs text-gray-400 space-y-1.5 list-disc list-inside">
+              <li>点击 <strong class="text-white">手柄图标</strong>：可自由修改每个按键，也支持即插即用 USB / 蓝牙手柄；</li>
+              <li>点击 <strong class="text-white">存档 / 读档图标</strong>：支持随时保存与读取本地进度（也可导出存档文件到本地）；</li>
+              <li>街机游戏若未正常启动，可点击播放器右上角 <strong class="text-white">切换核心</strong> 按钮重试。</li>
+            </ul>
+          </div>
+
+          <!-- 默认键位速查 -->
+          <div class="bg-gray-900/90 rounded-xl p-4 border border-white/10">
+            <h3 class="font-bold text-white mb-3 flex items-center gap-2">
+              <i class="fa fa-list-ul text-neon-blue"></i>默认键盘按键速查
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div class="bg-gray-800/80 rounded-lg p-2.5"><span class="text-nes font-bold mr-1.5">NES</span>方向键 · Z=B · X=A · Enter=开始 · Shift=选择</div>
+              <div class="bg-gray-800/80 rounded-lg p-2.5"><span class="text-snes font-bold mr-1.5">SNES</span>方向键 · Z/X/A/S · Q/W=L/R · Enter=开始</div>
+              <div class="bg-gray-800/80 rounded-lg p-2.5"><span class="text-gba font-bold mr-1.5">GBA</span>方向键 · Z=B · X=A · A/S=L/R · Enter=开始</div>
+              <div class="bg-gray-800/80 rounded-lg p-2.5"><span class="text-md font-bold mr-1.5">MD</span>方向键/WASD · Z/X/C (或 J/K/L) · Enter=开始</div>
+              <div class="bg-gray-800/80 rounded-lg p-2.5"><span class="text-arcade font-bold mr-1.5">街机</span>方向键 · Z/X/C/V · Shift/5=投币 · Enter/1=开始</div>
+              <div class="bg-gray-800/80 rounded-lg p-2.5"><span class="text-ps1 font-bold mr-1.5">PS1</span>方向键 · Z/X/A/S · Enter=开始 · Shift=选择</div>
+            </div>
+          </div>
+
+          <!-- 真正的安全缓存清理 -->
+          <div class="bg-gray-900/90 rounded-xl p-4 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-white flex items-center gap-2 mb-1">
+                <i class="fa fa-trash text-nes"></i>清理模拟器缓存
+              </h3>
+              <p class="text-xs text-gray-400">仅清理浏览器 IndexedDB 中的模拟器核心与 ROM 缓存，<strong>不会影响账号登录状态与收藏</strong>。</p>
+            </div>
+            <button id="clear-emu-cache-btn" class="shrink-0 bg-nes hover:bg-red-700 text-white text-xs font-bold py-2.5 px-4 rounded-lg transition">
+              清理缓存
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 游戏详情模态框 -->
+  <div id="game-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-effect rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative border border-white/15 shadow-2xl">
+      <button id="close-game-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl z-10">
+        <i class="fa fa-times"></i>
+      </button>
+      <div id="game-modal-content" class="p-6"></div>
+    </div>
+  </div>
+
+  <!-- 加载遮罩 -->
+  <div id="loading-overlay" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden">
+    <div class="text-center">
+      <div class="inline-block animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-secondary mb-4"></div>
+      <p id="loading-text" class="text-lg font-bold">加载中...</p>
+    </div>
+  </div>
+
+  <!-- 统一 Toast 容器 -->
+  <div id="toast-container" class="fixed top-20 right-4 z-[9999] space-y-2"></div>
+
+  <!-- 登录/注册弹窗 -->
+  <div id="auth-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity opacity-0" id="auth-backdrop"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+      <div class="glass-effect rounded-2xl w-full max-w-md transform scale-95 opacity-0 transition-all duration-300 pointer-events-auto relative" id="auth-modal-content">
+        <button id="close-auth-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10">
+          <i class="fa fa-times text-xl"></i>
+        </button>
+
+        <div class="p-6 pb-0">
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center shadow-neon-blue animate-pulse-glow">
+              <i class="fa fa-gamepad text-2xl text-white"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-1">一块游戏模拟器</h2>
+            <p class="text-gray-400 text-sm">登录以享受更多功能</p>
+          </div>
+
+          <div class="flex border-b border-gray-700 mb-6">
+            <button id="tab-login" class="flex-1 pb-3 text-center font-medium transition-all tab-active">登录</button>
+            <button id="tab-register" class="flex-1 pb-3 text-center font-medium text-gray-400 hover:text-white transition-all">注册</button>
+          </div>
+        </div>
+
+        <!-- 登录表单 -->
+        <div id="login-form" class="p-6 pt-0 animate-slide-up">
+          <form id="login-form-element" class="space-y-4">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa fa-envelope text-gray-500 group-focus-within:text-neon-blue transition-colors"></i>
+              </div>
+              <input type="email" id="login-email" required
+                class="w-full pl-10 pr-4 py-3 rounded-xl bg-dark/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue input-glow transition-all"
+                placeholder="请输入邮箱">
+            </div>
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa fa-lock text-gray-500 group-focus-within:text-neon-blue transition-colors"></i>
+              </div>
+              <input type="password" id="login-password" required
+                class="w-full pl-10 pr-12 py-3 rounded-xl bg-dark/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue input-glow transition-all"
+                placeholder="请输入密码">
+              <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white toggle-password" data-target="login-password">
+                <i class="fa fa-eye"></i>
+              </button>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <label class="flex items-center text-gray-400 cursor-pointer hover:text-white transition-colors">
+                <input type="checkbox" class="mr-2 rounded bg-dark border-gray-700"> 记住我
+              </label>
+              <a href="#" class="text-neon-blue hover:text-neon-purple transition-colors">忘记密码？</a>
+            </div>
+            <button type="submit" id="login-submit"
+              class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold transition-all hover:shadow-neon-blue btn-shine flex items-center justify-center gap-2">
+              <span>立即登录</span>
+              <div class="loading-spinner w-5 h-5 hidden" id="login-loading"></div>
+            </button>
+          </form>
+        </div>
+
+        <!-- 注册表单 -->
+        <div id="register-form" class="p-6 pt-0 hidden animate-slide-up">
+          <form id="register-form-element" class="space-y-4">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa fa-envelope text-gray-500 group-focus-within:text-neon-purple transition-colors"></i>
+              </div>
+              <input type="email" id="register-email" required
+                class="w-full pl-10 pr-4 py-3 rounded-xl bg-dark/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-neon-purple input-glow-purple transition-all"
+                placeholder="请输入邮箱">
+            </div>
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa fa-lock text-gray-500 group-focus-within:text-neon-purple transition-colors"></i>
+              </div>
+              <input type="password" id="register-password" required minlength="6"
+                class="w-full pl-10 pr-12 py-3 rounded-xl bg-dark/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-neon-purple input-glow-purple transition-all"
+                placeholder="请输入密码（至少6位）">
+              <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white toggle-password" data-target="register-password">
+                <i class="fa fa-eye"></i>
+              </button>
+            </div>
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa fa-lock text-gray-500 group-focus-within:text-neon-purple transition-colors"></i>
+              </div>
+              <input type="password" id="register-confirm-password" required
+                class="w-full pl-10 pr-4 py-3 rounded-xl bg-dark/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-neon-purple input-glow-purple transition-all"
+                placeholder="请确认密码">
+            </div>
+            <button type="submit" id="register-submit"
+              class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold transition-all hover:shadow-neon-purple btn-shine flex items-center justify-center gap-2">
+              <span>立即注册</span>
+              <div class="loading-spinner w-5 h-5 hidden" id="register-loading"></div>
+            </button>
+          </form>
+        </div>
+
+        <div class="p-6 pt-4 text-center border-t border-gray-800">
+          <p class="text-gray-400 text-sm" id="form-toggle-text">
+            还没有账号？ <button type="button" id="show-register" class="text-neon-blue hover:text-neon-purple font-medium transition-colors">立即注册</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 修改密码弹窗 -->
+  <div id="change-password-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity opacity-0" id="password-backdrop"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+      <div class="glass-effect rounded-2xl w-full max-w-md transform scale-95 opacity-0 transition-all duration-300 pointer-events-auto relative" id="password-modal-content">
+        <button id="close-password-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10">
+          <i class="fa fa-times text-xl"></i>
+        </button>
+        <div class="p-6">
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-neon-purple to-neon-pink flex items-center justify-center shadow-neon-purple animate-pulse-glow">
+              <i class="fa fa-lock text-2xl text-white"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-1">修改密码</h2>
+            <p class="text-gray-400 text-sm">请输入当前密码和新密码</p>
+          </div>
+          <form id="change-password-form" class="space-y-4">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa fa-lock text-gray-500"></i></div>
+              <input type="password" id="current-password" required class="w-full pl-10 pr-12 py-3 rounded-xl bg-dark/50 border border-gray-700 text-white focus:outline-none focus:border-neon-purple input-glow-purple" placeholder="当前密码">
+              <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white toggle-password" data-target="current-password"><i class="fa fa-eye"></i></button>
+            </div>
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa fa-lock text-gray-500"></i></div>
+              <input type="password" id="new-password" required minlength="6" class="w-full pl-10 pr-12 py-3 rounded-xl bg-dark/50 border border-gray-700 text-white focus:outline-none focus:border-neon-purple input-glow-purple" placeholder="新密码（至少6位）">
+              <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white toggle-password" data-target="new-password"><i class="fa fa-eye"></i></button>
+            </div>
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa fa-lock text-gray-500"></i></div>
+              <input type="password" id="confirm-new-password" required class="w-full pl-10 pr-4 py-3 rounded-xl bg-dark/50 border border-gray-700 text-white focus:outline-none focus:border-neon-purple input-glow-purple" placeholder="确认新密码">
+            </div>
+            <button type="submit" id="change-password-submit"
+              class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold transition-all hover:shadow-neon-purple btn-shine flex items-center justify-center gap-2 mt-6">
+              <span>确认修改</span>
+              <div class="loading-spinner w-5 h-5 hidden" id="password-loading"></div>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 精简后的 JS 模块（共 11 个） -->
+  <script src="js/utils.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/emulator.js"></script>
+  <script src="js/gameControl.js"></script>
+  <script src="js/gameModal.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/site-switcher.js" data-current-site="myemu"></script>
+</body>
+</html>
